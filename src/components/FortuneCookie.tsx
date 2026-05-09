@@ -59,8 +59,7 @@ export function FortuneCookie({ isOpening, isOpen, fortune, onClick, disabled }:
                       width: p.size,
                       height: p.size,
                       animationDelay: `${p.delay}s`,
-                      // @ts-expect-error css var
-                      "--tx": `${p.tx}px`,
+                      ["--tx" as any]: `${p.tx}px`,
                     } as React.CSSProperties
                   }
                 />
