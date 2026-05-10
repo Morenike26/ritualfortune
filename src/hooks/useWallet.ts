@@ -91,5 +91,5 @@ export function useWallet() {
     setState({ address: null, chainId: null, isConnecting: false, error: null });
   }, []);
 
-  return { ...state, connect, disconnect, refresh };
+  return { ...state, connect, disconnect, refresh, switchToRitual, isCorrectNetwork: state.chainId === RITUAL_CHAIN_ID };
 }
