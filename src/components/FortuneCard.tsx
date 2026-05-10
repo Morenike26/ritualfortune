@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
-import { Sparkles, ExternalLink, Loader2, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Sparkles, ExternalLink } from "lucide-react";
 import { explorerTxUrl, shortAddr } from "@/lib/web3";
 
 export type FortuneCardProps = {
@@ -8,20 +7,10 @@ export type FortuneCardProps = {
   openedAt: number;
   user: string | null;
   chainId?: number;
-  mintState: "idle" | "minting" | "minted";
-  mintTx?: string;
-  onMint: () => void;
+  txHash?: string;
 };
 
-export function FortuneCard({
-  fortune,
-  openedAt,
-  user,
-  chainId,
-  mintState,
-  mintTx,
-  onMint,
-}: FortuneCardProps) {
+export function FortuneCard({ fortune, openedAt, user, chainId, txHash }: FortuneCardProps) {
   const date = new Date(openedAt);
   return (
     <motion.div
@@ -44,7 +33,10 @@ export function FortuneCard({
             <Sparkles className="h-3.5 w-3.5 text-primary" />
             Ritual Fortune
           </span>
-          <span>{date.toLocaleDateString()} · {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+          <span>
+            {date.toLocaleDateString()} ·{" "}
+            {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </span>
         </div>
 
         <p className="font-display italic text-2xl sm:text-[26px] leading-snug text-foreground mt-5">
@@ -56,41 +48,19 @@ export function FortuneCard({
           <span className="font-mono text-foreground">{user ? shortAddr(user) : "—"}</span>
         </div>
 
-        <div className="mt-6">
-          {mintState === "idle" && (
-            <Button onClick={onMint} variant="gold" size="lg" className="w-full">
-              <Sparkles className="h-4 w-4" /> Mint as NFT
-            </Button>
-          )}
-          {mintState === "minting" && (
-            <Button disabled size="lg" className="w-full">
-              <Loader2 className="h-4 w-4 animate-spin" /> Minting your fortune…
-            </Button>
-          )}
-          {mintState === "minted" && mintTx && chainId && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-foreground">
-                <Check className="h-4 w-4 text-primary" /> Minted successfully
-              </div>
-              <a
-                href={explorerTxUrl(chainId, mintTx as `0x${string}`)}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs font-mono text-muted-foreground hover:text-primary inline-flex items-center gap-1"
-              >
-                {mintTx.slice(0, 10)}…{mintTx.slice(-6)} <ExternalLink className="h-3 w-3" />
-              </a>
-              <a
-                href={`https://opensea.io/assets/ethereum/${user ?? ""}`}
-                target="_blank"
-                rel="noreferrer"
-                className="block text-xs text-primary hover:underline"
-              >
-                View on OpenSea →
-              </a>
-            </div>
-          )}
-        </div>
+        {txHash && chainId && (
+          <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+            <span>Transaction</span>
+            <a
+              href={explorerTxUrl(chainId, txHash as `0x${string}`)}
+              target="_blank"
+              rel="noreferrer"
+              className="font-mono inline-flex items-center gap-1 hover:text-primary"
+            >
+              {txHash.slice(0, 10)}…{txHash.slice(-6)} <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        )}
       </div>
     </motion.div>
   );
