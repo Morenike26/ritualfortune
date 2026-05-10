@@ -262,6 +262,7 @@ function Index() {
         isConnecting={wallet.isConnecting}
         onConnect={wallet.connect}
         onDisconnect={wallet.disconnect}
+        onSwitchNetwork={wallet.switchToRitual}
       />
 
       <main className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-24">
