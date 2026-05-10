@@ -5,7 +5,7 @@ import { explorerAddrUrl, shortAddr, RITUAL_FORTUNE_ADDRESS, RITUAL_CHAIN_ID } f
 type Props = {
   address: string | null;
   chainId: number | null;
-  totalFortunes: bigint | null;
+  totalFortunes?: bigint | null;
   isConnecting: boolean;
   onConnect: () => void;
   onDisconnect: () => void;
@@ -15,7 +15,6 @@ type Props = {
 export function Header({
   address,
   chainId,
-  totalFortunes,
   isConnecting,
   onConnect,
   onDisconnect,
@@ -46,14 +45,6 @@ export function Header({
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="hidden sm:flex flex-col items-end leading-tight">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Total fortunes
-          </span>
-          <span className="font-display text-xl text-foreground">
-            {totalFortunes !== null ? totalFortunes.toString() : "—"}
-          </span>
-        </div>
 
         {wrongNetwork && (
           <Button
