@@ -61,6 +61,12 @@ export function useWallet() {
     setState((s) => ({ ...s, isConnecting: true, error: null }));
     try {
       const accounts: string[] = await eth.request({ method: "eth_requestAccounts" });
+      try {
+        await ensureRitualNetwork();
+      } catch (switchErr: any) {
+        // user may reject — continue but surface message
+        console.warn("Network switch failed:", switchErr?.message);
+      }
       const chainHex: string = await eth.request({ method: "eth_chainId" });
       setState({
         address: (accounts[0] as Address) ?? null,
@@ -70,6 +76,14 @@ export function useWallet() {
       });
     } catch (e: any) {
       setState((s) => ({ ...s, isConnecting: false, error: e?.message ?? "Connection failed" }));
+    }
+  }, []);
+
+  const switchToRitual = useCallback(async () => {
+    try {
+      await ensureRitualNetwork();
+    } catch (e: any) {
+      setState((s) => ({ ...s, error: e?.message ?? "Network switch failed" }));
     }
   }, []);
 
