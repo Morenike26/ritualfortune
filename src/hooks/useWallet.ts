@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Address } from "viem";
-import { getEthereum } from "@/lib/web3";
+import { getEthereum, ensureRitualNetwork, RITUAL_CHAIN_ID } from "@/lib/web3";
 
 export type WalletState = {
   address: Address | null;
