@@ -13,9 +13,13 @@ import { useWallet } from "@/hooks/useWallet";
 import {
   RITUAL_FORTUNE_ABI,
   RITUAL_FORTUNE_ADDRESS,
+  RITUAL_CHAIN_ID,
   publicClientForChain,
   walletClientForChain,
+  ensureRitualNetwork,
+  explorerTxUrl,
 } from "@/lib/web3";
+import { formatEther } from "viem";
 import { historyStore, mintsStore, type FortuneEntry, type MintedCard } from "@/lib/storage";
 
 export const Route = createFileRoute("/")({
