@@ -94,12 +94,22 @@ function Index() {
 
   const handleOpen = useCallback(async () => {
     if (cooldown || isOpening) return;
-    if (!wallet.address || !wallet.chainId) {
+    if (!wallet.address) {
       toast.message("Connect your wallet", {
         description: "You need a wallet to crack open an on-chain fortune.",
       });
       wallet.connect();
       return;
+    }
+    if (wallet.chainId !== RITUAL_CHAIN_ID) {
+      try {
+        await ensureRitualNetwork();
+      } catch {
+        toast.error("Wrong network", {
+          description: "Switch to Ritual Foundation Network (Chain ID 1979) to continue.",
+        });
+        return;
+      }
     }
 
     setIsOpening(true);
@@ -112,27 +122,42 @@ function Index() {
     let txHash: string | undefined;
 
     try {
-      const walletClient = walletClientForChain(wallet.chainId, wallet.address);
-      const publicClient = publicClientForChain(wallet.chainId);
+      const walletClient = walletClientForChain(RITUAL_CHAIN_ID, wallet.address);
+      const publicClient = publicClientForChain(RITUAL_CHAIN_ID);
 
-      // Simulate to capture return value
+      // Estimate gas + simulate to capture return value
       try {
-        const { result } = await publicClient.simulateContract({
+        const { result, request } = await publicClient.simulateContract({
           address: RITUAL_FORTUNE_ADDRESS,
           abi: RITUAL_FORTUNE_ABI,
           functionName: "openFortuneCookie",
           account: wallet.address,
         });
         fortuneText = (result as string) ?? "";
+        try {
+          const gas = await publicClient.estimateContractGas({
+            address: RITUAL_FORTUNE_ADDRESS,
+            abi: RITUAL_FORTUNE_ABI,
+            functionName: "openFortuneCookie",
+            account: wallet.address,
+          });
+          const gasPrice = await publicClient.getGasPrice();
+          const cost = formatEther(gas * gasPrice);
+          toast.message("Confirm in wallet", {
+            description: `Estimated cost ≈ ${Number(cost).toFixed(6)} RITUAL`,
+          });
+        } catch {
+          /* ignore gas estimate */
+        }
+        txHash = await walletClient.writeContract(request);
       } catch {
-        // fall through
+        // simulate failed — try direct write
+        txHash = await walletClient.writeContract({
+          address: RITUAL_FORTUNE_ADDRESS,
+          abi: RITUAL_FORTUNE_ABI,
+          functionName: "openFortuneCookie",
+        });
       }
-
-      txHash = await walletClient.writeContract({
-        address: RITUAL_FORTUNE_ADDRESS,
-        abi: RITUAL_FORTUNE_ABI,
-        functionName: "openFortuneCookie",
-      });
 
       // Wait for receipt and try to parse FortuneOpened event
       const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
@@ -153,6 +178,16 @@ function Index() {
         }
       } catch {
         /* ignore */
+      }
+
+      if (txHash) {
+        toast.success("Fortune confirmed on-chain", {
+          description: "View transaction",
+          action: {
+            label: "Explorer",
+            onClick: () => window.open(explorerTxUrl(RITUAL_CHAIN_ID, txHash as `0x${string}`), "_blank"),
+          },
+        });
       }
     } catch (e: any) {
       toast.error("Could not open fortune", {
