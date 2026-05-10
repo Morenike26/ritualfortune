@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Address } from "viem";
-import { getEthereum } from "@/lib/web3";
+import { getEthereum, ensureRitualNetwork, RITUAL_CHAIN_ID } from "@/lib/web3";
 
 export type WalletState = {
   address: Address | null;
@@ -61,6 +61,12 @@ export function useWallet() {
     setState((s) => ({ ...s, isConnecting: true, error: null }));
     try {
       const accounts: string[] = await eth.request({ method: "eth_requestAccounts" });
+      try {
+        await ensureRitualNetwork();
+      } catch (switchErr: any) {
+        // user may reject — continue but surface message
+        console.warn("Network switch failed:", switchErr?.message);
+      }
       const chainHex: string = await eth.request({ method: "eth_chainId" });
       setState({
         address: (accounts[0] as Address) ?? null,
@@ -73,9 +79,17 @@ export function useWallet() {
     }
   }, []);
 
+  const switchToRitual = useCallback(async () => {
+    try {
+      await ensureRitualNetwork();
+    } catch (e: any) {
+      setState((s) => ({ ...s, error: e?.message ?? "Network switch failed" }));
+    }
+  }, []);
+
   const disconnect = useCallback(() => {
     setState({ address: null, chainId: null, isConnecting: false, error: null });
   }, []);
 
-  return { ...state, connect, disconnect, refresh };
+  return { ...state, connect, disconnect, refresh, switchToRitual, isCorrectNetwork: state.chainId === RITUAL_CHAIN_ID };
 }
