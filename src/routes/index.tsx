@@ -2,13 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, Toaster } from "sonner";
-import { Sparkles, History as HistoryIcon, Images } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import { Header } from "@/components/Header";
 import { FortuneCookie } from "@/components/FortuneCookie";
 import { FortuneCard } from "@/components/FortuneCard";
-import { HistoryList, MintGallery } from "@/components/Collections";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { HistoryList } from "@/components/Collections";
 import { useWallet } from "@/hooks/useWallet";
 import {
   RITUAL_FORTUNE_ABI,
@@ -20,7 +19,7 @@ import {
   explorerTxUrl,
 } from "@/lib/web3";
 import { formatEther } from "viem";
-import { historyStore, mintsStore, type FortuneEntry, type MintedCard } from "@/lib/storage";
+import { historyStore, type FortuneEntry } from "@/lib/storage";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -30,12 +29,12 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Crack open an on-chain fortune cookie, reveal a unique message, and mint your favorites as collectible NFTs.",
+          "Crack open an on-chain fortune cookie and reveal a unique message from the Ritual Foundation Network.",
       },
       { property: "og:title", content: "Ritual Fortune" },
       {
         property: "og:description",
-        content: "On-chain fortunes. Mintable wisdom. A small daily ritual.",
+        content: "On-chain fortunes. A small daily ritual.",
       },
     ],
   }),
@@ -53,52 +52,62 @@ function pickFallback() {
   return FALLBACK_FORTUNES[Math.floor(Math.random() * FALLBACK_FORTUNES.length)];
 }
 
+const COOLDOWN_MS = 6 * 60 * 60 * 1000; // 6 hours
+const COOLDOWN_KEY = "ritual:lastOpen:";
+
+function getLastOpen(addr: string): number {
+  if (typeof window === "undefined") return 0;
+  return Number(localStorage.getItem(COOLDOWN_KEY + addr.toLowerCase()) ?? 0);
+}
+function setLastOpen(addr: string, ts: number) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(COOLDOWN_KEY + addr.toLowerCase(), String(ts));
+}
+
+function formatRemaining(ms: number) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${h}h ${m}m ${sec}s`;
+}
+
 function Index() {
   const wallet = useWallet();
   const [isOpening, setIsOpening] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [currentFortune, setCurrentFortune] = useState<FortuneEntry | null>(null);
-  const [mintState, setMintState] = useState<"idle" | "minting" | "minted">("idle");
-  const [mintTx, setMintTx] = useState<string | undefined>();
   const [history, setHistory] = useState<FortuneEntry[]>([]);
-  const [mints, setMints] = useState<MintedCard[]>([]);
-  const [totalFortunes, setTotalFortunes] = useState<bigint | null>(null);
-  const [cooldown, setCooldown] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     setHistory(historyStore.list());
-    setMints(mintsStore.list());
   }, []);
 
-  // Read total fortunes
   useEffect(() => {
-    const chainId = wallet.chainId ?? 1;
-    let cancelled = false;
-    (async () => {
-      try {
-        const client = publicClientForChain(chainId);
-        const total = (await client.readContract({
-          address: RITUAL_FORTUNE_ADDRESS,
-          abi: RITUAL_FORTUNE_ABI,
-          functionName: "getTotalFortunes",
-        })) as bigint;
-        if (!cancelled) setTotalFortunes(total);
-      } catch (e) {
-        if (!cancelled) setTotalFortunes(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [wallet.chainId, currentFortune?.id]);
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const lastOpen = wallet.address ? getLastOpen(wallet.address) : 0;
+  const remaining = wallet.address ? Math.max(0, lastOpen + COOLDOWN_MS - now) : 0;
+  const cooldown = remaining > 0;
 
   const handleOpen = useCallback(async () => {
-    if (cooldown || isOpening) return;
+    if (isOpening) return;
     if (!wallet.address) {
       toast.message("Connect your wallet", {
         description: "You need a wallet to crack open an on-chain fortune.",
       });
       wallet.connect();
+      return;
+    }
+    const last = getLastOpen(wallet.address);
+    const left = last + COOLDOWN_MS - Date.now();
+    if (left > 0) {
+      toast.error("Patience, traveler", {
+        description: `Next fortune available in ${formatRemaining(left)}.`,
+      });
       return;
     }
     if (wallet.chainId !== RITUAL_CHAIN_ID) {
@@ -115,8 +124,6 @@ function Index() {
     setIsOpening(true);
     setIsOpen(false);
     setCurrentFortune(null);
-    setMintState("idle");
-    setMintTx(undefined);
 
     let fortuneText = "";
     let txHash: string | undefined;
@@ -125,7 +132,6 @@ function Index() {
       const walletClient = walletClientForChain(RITUAL_CHAIN_ID, wallet.address);
       const publicClient = publicClientForChain(RITUAL_CHAIN_ID);
 
-      // Estimate gas + simulate to capture return value
       try {
         const { result, request } = await publicClient.simulateContract({
           address: RITUAL_FORTUNE_ADDRESS,
@@ -147,11 +153,10 @@ function Index() {
             description: `Estimated cost ≈ ${Number(cost).toFixed(6)} RITUAL`,
           });
         } catch {
-          /* ignore gas estimate */
+          /* ignore */
         }
         txHash = await walletClient.writeContract(request);
       } catch {
-        // simulate failed — try direct write
         txHash = await walletClient.writeContract({
           address: RITUAL_FORTUNE_ADDRESS,
           abi: RITUAL_FORTUNE_ABI,
@@ -159,8 +164,9 @@ function Index() {
         });
       }
 
-      // Wait for receipt and try to parse FortuneOpened event
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash as `0x${string}`,
+      });
       try {
         for (const log of receipt.logs) {
           try {
@@ -185,7 +191,8 @@ function Index() {
           description: "View transaction",
           action: {
             label: "Explorer",
-            onClick: () => window.open(explorerTxUrl(RITUAL_CHAIN_ID, txHash as `0x${string}`), "_blank"),
+            onClick: () =>
+              window.open(explorerTxUrl(RITUAL_CHAIN_ID, txHash as `0x${string}`), "_blank"),
           },
         });
       }
@@ -193,7 +200,6 @@ function Index() {
       toast.error("Could not open fortune", {
         description: e?.shortMessage ?? e?.message ?? "Transaction failed.",
       });
-      // Offer a graceful fallback so the UX still feels alive
       fortuneText = pickFallback();
     }
 
@@ -212,43 +218,11 @@ function Index() {
     setCurrentFortune(entry);
     setHistory(historyStore.add(entry));
     setIsOpening(false);
-    setCooldown(true);
+    if (wallet.address) setLastOpen(wallet.address, Date.now());
+    setNow(Date.now());
+  }, [isOpening, wallet]);
 
-    setTimeout(() => setCooldown(false), 3500);
-  }, [cooldown, isOpening, wallet]);
-
-  const handleMint = useCallback(async () => {
-    if (!currentFortune || !wallet.address || !wallet.chainId) return;
-    setMintState("minting");
-    try {
-      // Simulated NFT mint flow (no mint contract specified).
-      // Replace with real ERC-721 contract write when address is provided.
-      await new Promise((r) => setTimeout(r, 1800));
-      const fakeTx = ("0x" +
-        Array.from({ length: 64 })
-          .map(() => Math.floor(Math.random() * 16).toString(16))
-          .join("")) as `0x${string}`;
-      const minted: MintedCard = {
-        ...currentFortune,
-        mintTx: fakeTx,
-        mintedAt: Date.now(),
-      };
-      setMintTx(fakeTx);
-      setMintState("minted");
-      setMints(mintsStore.add(minted));
-      toast.success("Fortune minted", {
-        description: "Your card is now in your collection.",
-      });
-    } catch (e: any) {
-      setMintState("idle");
-      toast.error("Mint failed", { description: e?.message });
-    }
-  }, [currentFortune, wallet.address, wallet.chainId]);
-
-  const stats = useMemo(
-    () => ({ opened: history.length, minted: mints.length }),
-    [history.length, mints.length]
-  );
+  const stats = useMemo(() => ({ opened: history.length }), [history.length]);
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -258,7 +232,7 @@ function Index() {
       <Header
         address={wallet.address}
         chainId={wallet.chainId}
-        totalFortunes={totalFortunes}
+        totalFortunes={null}
         isConnecting={wallet.isConnecting}
         onConnect={wallet.connect}
         onDisconnect={wallet.disconnect}
@@ -266,7 +240,6 @@ function Index() {
       />
 
       <main className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-24">
-        {/* Hero */}
         <section className="text-center pt-6 sm:pt-12">
           <motion.p
             initial={{ opacity: 0, y: 8 }}
@@ -290,12 +263,11 @@ function Index() {
             transition={{ duration: 0.7, delay: 0.15 }}
             className="mt-4 text-muted-foreground max-w-xl mx-auto"
           >
-            Each tap calls the contract, reveals a one-of-a-kind message, and lets you
-            mint the moments worth keeping.
+            One fortune every six hours. Each tap calls the contract and reveals a unique
+            on-chain message — confirmed by transaction.
           </motion.p>
         </section>
 
-        {/* Cookie */}
         <section className="mt-8 sm:mt-12 flex flex-col items-center">
           <FortuneCookie
             isOpening={isOpening}
@@ -304,16 +276,16 @@ function Index() {
             onClick={handleOpen}
             disabled={isOpening || cooldown}
           />
+          {cooldown && (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Next fortune in <span className="font-mono text-foreground">{formatRemaining(remaining)}</span>
+            </p>
+          )}
         </section>
 
-        {/* Card + side panel */}
         <section className="mt-12 grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-8 items-start">
           <div className="hidden lg:flex justify-end">
-            <StatPanel
-              opened={stats.opened}
-              minted={stats.minted}
-              total={totalFortunes}
-            />
+            <StatPanel opened={stats.opened} />
           </div>
           <div className="flex justify-center">
             <AnimatePresence mode="wait">
@@ -324,9 +296,7 @@ function Index() {
                   openedAt={currentFortune.openedAt}
                   user={currentFortune.user}
                   chainId={currentFortune.chainId}
-                  mintState={mintState}
-                  mintTx={mintTx}
-                  onMint={handleMint}
+                  txHash={currentFortune.txHash}
                 />
               ) : (
                 <motion.div
@@ -342,34 +312,14 @@ function Index() {
             </AnimatePresence>
           </div>
           <div className="lg:hidden">
-            <StatPanel
-              opened={stats.opened}
-              minted={stats.minted}
-              total={totalFortunes}
-            />
+            <StatPanel opened={stats.opened} />
           </div>
           <div className="hidden lg:block" />
         </section>
 
-        {/* Tabs: history / collection */}
         <section className="mt-16">
-          <Tabs defaultValue="history">
-            <TabsList className="bg-card/70 backdrop-blur border border-border">
-              <TabsTrigger value="history" className="gap-2">
-                <HistoryIcon className="h-4 w-4" /> History
-              </TabsTrigger>
-              <TabsTrigger value="collection" className="gap-2">
-                <Images className="h-4 w-4" /> Collection
-                <span className="ml-1 text-xs text-muted-foreground">{mints.length}</span>
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="history" className="mt-4">
-              <HistoryList items={history} />
-            </TabsContent>
-            <TabsContent value="collection" className="mt-4">
-              <MintGallery items={mints} />
-            </TabsContent>
-          </Tabs>
+          <h3 className="font-display text-2xl mb-4">History</h3>
+          <HistoryList items={history} />
         </section>
 
         <footer className="mt-20 text-center text-xs text-muted-foreground">
@@ -381,22 +331,12 @@ function Index() {
   );
 }
 
-function StatPanel({
-  opened,
-  minted,
-  total,
-}: {
-  opened: number;
-  minted: number;
-  total: bigint | null;
-}) {
+function StatPanel({ opened }: { opened: number }) {
   return (
     <div className="rounded-2xl border border-border bg-card/70 backdrop-blur p-5 w-full max-w-xs mx-auto">
       <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Your ritual</p>
       <div className="mt-3 space-y-3">
         <Row label="Fortunes opened" value={opened.toString()} />
-        <Row label="Cards minted" value={minted.toString()} />
-        <Row label="On-chain total" value={total !== null ? total.toString() : "—"} />
       </div>
     </div>
   );
