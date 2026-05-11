@@ -86,22 +86,8 @@ export function FortuneCard({ fortune, openedAt, user, chainId, txHash }: Fortun
             &ldquo;{fortune}&rdquo;
           </p>
 
-          <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground gap-2">
-            <span>Holder</span>
-            <span className="font-mono text-foreground truncate">{user ? shortAddr(user) : "—"}</span>
-          </div>
-
-          {txHash && chainId && (
-            <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground gap-2">
-              <span>Transaction</span>
-              <span className="font-mono text-foreground truncate">
-                {txHash.slice(0, 8)}…{txHash.slice(-6)}
-              </span>
-            </div>
-          )}
-
-          <div className="mt-5 pt-4 border-t border-border/60 text-center text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-            ritualfortune · on-chain
+          <div className="mt-6 pt-4 border-t border-border/60 text-center text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+            ritualfortune
           </div>
         </div>
       </div>
@@ -235,23 +221,16 @@ export function FortuneCard({ fortune, openedAt, user, chainId, txHash }: Fortun
 
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
+                textAlign: "center",
                 fontSize: 18,
                 color: "#7c6a5e",
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                letterSpacing: "0.3em",
+                textTransform: "uppercase",
                 borderTop: "1px solid rgba(124,106,94,0.2)",
                 paddingTop: 28,
               }}
             >
-              <span>{user ? shortAddr(user) : "—"}</span>
-              {txHash ? (
-                <span>
-                  tx {txHash.slice(0, 6)}…{txHash.slice(-4)}
-                </span>
-              ) : (
-                <span>off-chain</span>
-              )}
+              ✦ ritual fortune ✦
             </div>
           </div>
         </div>
