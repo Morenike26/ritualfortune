@@ -15,17 +15,29 @@ export type FortuneCardProps = {
 
 export function FortuneCard({ fortune, openedAt, user, chainId, txHash }: FortuneCardProps) {
   const date = new Date(openedAt);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async () => {
-    if (!cardRef.current) return;
+    if (!exportRef.current) return;
     setDownloading(true);
+    const node = exportRef.current;
+
+    // Reveal the offscreen export node so it's painted at full size, then hide again.
+    const prev = node.style.cssText;
+    node.style.position = "fixed";
+    node.style.left = "-10000px";
+    node.style.top = "0";
+    node.style.opacity = "1";
+    node.style.pointerEvents = "none";
+
     try {
-      const dataUrl = await toPng(cardRef.current, {
+      const dataUrl = await toPng(node, {
         cacheBust: true,
         pixelRatio: 3,
-        backgroundColor: "transparent",
+        width: 1080,
+        height: 1350,
+        backgroundColor: "#fbf5e8",
       });
       const link = document.createElement("a");
       link.download = `ritual-fortune-${date.getTime()}.png`;
@@ -34,6 +46,7 @@ export function FortuneCard({ fortune, openedAt, user, chainId, txHash }: Fortun
     } catch (e) {
       console.error("Download failed", e);
     } finally {
+      node.style.cssText = prev;
       setDownloading(false);
     }
   };
@@ -45,8 +58,8 @@ export function FortuneCard({ fortune, openedAt, user, chainId, txHash }: Fortun
       transition={{ duration: 0.45, ease: [0.2, 0.9, 0.2, 1.05] }}
       className="relative w-full max-w-md mx-auto"
     >
+      {/* Visible card */}
       <div
-        ref={cardRef}
         className="rounded-3xl p-[1.5px]"
         style={{ background: "var(--gradient-gold)" }}
       >
@@ -114,6 +127,148 @@ export function FortuneCard({ fortune, openedAt, user, chainId, txHash }: Fortun
             </a>
           </Button>
         )}
+      </div>
+
+      {/* Hidden high-res export node — fixed 1080x1350 for crisp social-share output */}
+      <div
+        ref={exportRef}
+        aria-hidden
+        style={{
+          position: "fixed",
+          left: "-10000px",
+          top: 0,
+          width: 1080,
+          height: 1350,
+          opacity: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse at 25% 15%, #f7e3a8 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, #f4d3e0 0%, transparent 55%), linear-gradient(135deg, #fbf5e8 0%, #f5ead8 100%)",
+          padding: 90,
+          boxSizing: "border-box",
+          fontFamily: "Inter, system-ui, sans-serif",
+          color: "#3d2a4a",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* top mark */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontSize: 18,
+            letterSpacing: "0.32em",
+            textTransform: "uppercase",
+            color: "#7c6a5e",
+          }}
+        >
+          <span>✦ Ritual Fortune</span>
+          <span>{date.toLocaleDateString()}</span>
+        </div>
+
+        {/* card body */}
+        <div
+          style={{
+            flex: 1,
+            marginTop: 60,
+            borderRadius: 36,
+            padding: 6,
+            background: "linear-gradient(135deg, #e8b84a 0%, #d4842a 100%)",
+            boxShadow: "0 30px 80px -20px rgba(60,30,80,0.25)",
+          }}
+        >
+          <div
+            style={{
+              borderRadius: 32,
+              background: "#fffdf6",
+              height: "100%",
+              padding: "80px 70px",
+              boxSizing: "border-box",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: -120,
+                right: -120,
+                width: 360,
+                height: 360,
+                borderRadius: "50%",
+                background:
+                  "radial-gradient(circle, rgba(232,184,74,0.45) 0%, transparent 70%)",
+                filter: "blur(20px)",
+              }}
+            />
+            <div
+              style={{
+                fontSize: 22,
+                letterSpacing: "0.3em",
+                textTransform: "uppercase",
+                color: "#b89a6b",
+                textAlign: "center",
+              }}
+            >
+              ✦ a fortune ✦
+            </div>
+
+            <div
+              style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontStyle: "italic",
+                fontSize: 64,
+                lineHeight: 1.18,
+                color: "#2d1f3d",
+                textAlign: "center",
+                padding: "0 20px",
+              }}
+            >
+              <span style={{ color: "#c9a84c", marginRight: 8 }}>“</span>
+              {fortune}
+              <span style={{ color: "#c9a84c", marginLeft: 8 }}>”</span>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 18,
+                color: "#7c6a5e",
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                borderTop: "1px solid rgba(124,106,94,0.2)",
+                paddingTop: 28,
+              }}
+            >
+              <span>{user ? shortAddr(user) : "—"}</span>
+              {txHash ? (
+                <span>
+                  tx {txHash.slice(0, 6)}…{txHash.slice(-4)}
+                </span>
+              ) : (
+                <span>off-chain</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* footer */}
+        <div
+          style={{
+            marginTop: 50,
+            textAlign: "center",
+            fontSize: 18,
+            letterSpacing: "0.4em",
+            textTransform: "uppercase",
+            color: "#9a8472",
+          }}
+        >
+          ritualfortune · on-chain wisdom
+        </div>
       </div>
     </motion.div>
   );
