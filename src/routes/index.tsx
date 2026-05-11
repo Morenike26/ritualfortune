@@ -239,7 +239,7 @@ function Index() {
         onSwitchNetwork={wallet.switchToRitual}
       />
 
-      <main className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-24">
+      <main className="relative z-10 mx-auto w-full max-w-6xl px-4 sm:px-6 pb-24">
         <section className="text-center pt-6 sm:pt-12">
           <motion.p
             initial={{ opacity: 0, y: 8 }}
