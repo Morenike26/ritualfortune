@@ -23,7 +23,7 @@ export function Header({
   const wrongNetwork = !!address && chainId !== RITUAL_CHAIN_ID;
 
   return (
-    <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-6">
+    <header className="relative z-10 mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 sm:py-6">
       <div className="flex items-center gap-3">
         <div
           className="grid h-10 w-10 place-items-center rounded-xl text-primary-foreground font-display text-xl"
@@ -79,9 +79,10 @@ export function Header({
             </button>
           </div>
         ) : (
-          <Button onClick={onConnect} variant="gold" disabled={isConnecting}>
+          <Button onClick={onConnect} variant="gold" disabled={isConnecting} className="text-sm">
             <Wallet className="h-4 w-4" />
-            {isConnecting ? "Connecting…" : "Connect Wallet"}
+            <span className="hidden xs:inline">{isConnecting ? "Connecting…" : "Connect Wallet"}</span>
+            <span className="xs:hidden">{isConnecting ? "…" : "Connect"}</span>
           </Button>
         )}
       </div>
