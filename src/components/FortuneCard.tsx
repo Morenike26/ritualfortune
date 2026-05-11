@@ -246,7 +246,7 @@ export function FortuneCard({ fortune, openedAt, user, chainId, txHash }: Fortun
             color: "#9a8472",
           }}
         >
-          ritualfortune · on-chain wisdom
+          ritualfortune
         </div>
       </div>
     </motion.div>
