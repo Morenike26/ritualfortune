@@ -81,8 +81,7 @@ export function Header({
         ) : (
           <Button onClick={onConnect} variant="gold" disabled={isConnecting} className="text-sm">
             <Wallet className="h-4 w-4" />
-            <span className="hidden xs:inline">{isConnecting ? "Connecting…" : "Connect Wallet"}</span>
-            <span className="xs:hidden">{isConnecting ? "…" : "Connect"}</span>
+            {isConnecting ? "Connecting…" : "Connect"}
           </Button>
         )}
       </div>
