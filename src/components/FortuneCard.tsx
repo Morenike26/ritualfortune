@@ -79,13 +79,9 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
     ctx.closePath();
   };
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     setDownloading(true);
     try {
-      if (document.fonts && (document.fonts as any).ready) {
-        try { await (document.fonts as any).ready; } catch { /* ignore */ }
-      }
-
       const canvas = document.createElement("canvas");
       const width = 1440;
       const height = 1800;
@@ -189,22 +185,26 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
       ctx.fillText("✦ ritual fortune ✦", width / 2, height - 290);
       ctx.restore();
 
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((result) => {
-          if (result) resolve(result);
-          else reject(new Error("PNG export failed"));
-        }, "image/png");
-      });
+      const dataUrl = canvas.toDataURL("image/png");
+      if (!dataUrl.startsWith("data:image/png") || dataUrl.length < 10000) {
+        throw new Error("PNG export produced an invalid image");
+      }
 
-      const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.download = `ritual-fortune-${date.getTime()}.png`;
-      link.href = objectUrl;
+      link.href = dataUrl;
       link.rel = "noopener";
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+
+      if (/iPad|iPhone|iPod/.test(window.navigator.userAgent)) {
+        const preview = window.open("", "_blank", "noopener,noreferrer");
+        preview?.document.write(
+          `<title>Ritual Fortune</title><body style="margin:0;background:#fff7df;display:grid;min-height:100vh;place-items:center"><img alt="Ritual Fortune" src="${dataUrl}" style="width:min(100vw,720px);height:auto;display:block" /></body>`,
+        );
+        preview?.document.close();
+      }
     } catch (e) {
       console.error("Download failed", e);
     } finally {
