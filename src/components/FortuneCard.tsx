@@ -26,6 +26,25 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
     let line = "";
 
     words.forEach((word) => {
+      if (ctx.measureText(word).width > maxWidth) {
+        if (line) {
+          lines.push(line);
+          line = "";
+        }
+        let chunk = "";
+        [...word].forEach((letter) => {
+          const testChunk = `${chunk}${letter}`;
+          if (ctx.measureText(testChunk).width > maxWidth && chunk) {
+            lines.push(chunk);
+            chunk = letter;
+          } else {
+            chunk = testChunk;
+          }
+        });
+        if (chunk) line = chunk;
+        return;
+      }
+
       const testLine = line ? `${line} ${word}` : word;
       if (ctx.measureText(testLine).width > maxWidth && line) {
         lines.push(line);
@@ -60,81 +79,137 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
     ctx.closePath();
   };
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     setDownloading(true);
     try {
-      if (document.fonts && (document.fonts as any).ready) {
-        try { await (document.fonts as any).ready; } catch { /* ignore */ }
-      }
+      const triggerDownload = (href: string, cleanup?: () => void) => {
+        const link = document.createElement("a");
+        link.download = `ritual-fortune-${date.getTime()}.png`;
+        link.href = href;
+        link.rel = "noopener";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        cleanup?.();
+      };
 
       const canvas = document.createElement("canvas");
-      canvas.width = 1080;
-      canvas.height = 1350;
+      const width = 1440;
+      const height = 1800;
+      canvas.width = width;
+      canvas.height = height;
 
       const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+      if (!ctx) throw new Error("Canvas is not available");
 
-      const background = ctx.createLinearGradient(0, 0, 1080, 1350);
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+
+      const background = ctx.createLinearGradient(0, 0, width, height);
       background.addColorStop(0, "#fff7df");
-      background.addColorStop(0.52, "#fbefd0");
-      background.addColorStop(1, "#f2d7a1");
+      background.addColorStop(0.42, "#fbefd0");
+      background.addColorStop(1, "#eecf93");
       ctx.fillStyle = background;
-      ctx.fillRect(0, 0, 1080, 1350);
+      ctx.fillRect(0, 0, width, height);
 
-      const glow = ctx.createRadialGradient(840, 250, 20, 840, 250, 430);
-      glow.addColorStop(0, "rgba(232, 176, 62, 0.5)");
-      glow.addColorStop(1, "rgba(232, 176, 62, 0)");
-      ctx.fillStyle = glow;
-      ctx.fillRect(0, 0, 1080, 1350);
+      const topGlow = ctx.createRadialGradient(1080, 270, 20, 1080, 270, 620);
+      topGlow.addColorStop(0, "rgba(232, 176, 62, 0.45)");
+      topGlow.addColorStop(1, "rgba(232, 176, 62, 0)");
+      ctx.fillStyle = topGlow;
+      ctx.fillRect(0, 0, width, height);
 
-      const border = ctx.createLinearGradient(110, 110, 970, 1240);
-      border.addColorStop(0, "#f1c964");
-      border.addColorStop(1, "#b96d27");
-      drawRoundedRect(ctx, 96, 110, 888, 1130, 64);
+      const bottomGlow = ctx.createRadialGradient(260, 1520, 30, 260, 1520, 560);
+      bottomGlow.addColorStop(0, "rgba(109, 41, 77, 0.16)");
+      bottomGlow.addColorStop(1, "rgba(109, 41, 77, 0)");
+      ctx.fillStyle = bottomGlow;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.globalAlpha = 0.12;
+      ctx.strokeStyle = "#b96d27";
+      ctx.lineWidth = 2;
+      for (let x = -height; x < width; x += 84) {
+        ctx.beginPath();
+        ctx.moveTo(x, height);
+        ctx.lineTo(x + height, 0);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      const border = ctx.createLinearGradient(132, 138, width - 132, height - 138);
+      border.addColorStop(0, "#f4d979");
+      border.addColorStop(0.48, "#d99b38");
+      border.addColorStop(1, "#9f5a24");
+      drawRoundedRect(ctx, 126, 138, width - 252, height - 276, 86);
       ctx.fillStyle = border;
       ctx.fill();
 
-      drawRoundedRect(ctx, 110, 124, 860, 1102, 54);
+      drawRoundedRect(ctx, 146, 158, width - 292, height - 316, 68);
       ctx.fillStyle = "#fffaf0";
       ctx.fill();
 
-      ctx.fillStyle = "rgba(185, 109, 39, 0.2)";
-      ctx.font = "46px Georgia, serif";
+      const innerGlow = ctx.createRadialGradient(width / 2, height / 2, 80, width / 2, height / 2, 680);
+      innerGlow.addColorStop(0, "rgba(244, 217, 121, 0.24)");
+      innerGlow.addColorStop(1, "rgba(232, 176, 62, 0)");
+      ctx.fillStyle = innerGlow;
+      drawRoundedRect(ctx, 146, 158, width - 292, height - 316, 68);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(185, 109, 39, 0.22)";
+      ctx.font = "64px Georgia, serif";
       ctx.textAlign = "center";
-      ctx.fillText("✦", 210, 230);
-      ctx.fillText("✦", 870, 1120);
-      ctx.fillText("✧", 860, 260);
-      ctx.fillText("✧", 230, 1085);
+      ctx.fillText("✦", 286, 320);
+      ctx.fillText("✦", width - 286, height - 320);
+      ctx.fillText("✧", width - 300, 346);
+      ctx.fillText("✧", 300, height - 352);
 
       ctx.fillStyle = "#6d294d";
-      ctx.font = "italic 72px Georgia, serif";
+      ctx.font = "italic 92px Georgia, serif";
       ctx.textBaseline = "middle";
 
-      const maxWidth = 700;
-      let fontSize = 72;
-      let lineHeight = 92;
+      const maxWidth = 920;
+      let fontSize = 92;
+      let lineHeight = 118;
       let lines: string[] = [];
+      const quote = `“${fortune.trim() || "Your fortune is unfolding."}”`;
 
       do {
         ctx.font = `italic ${fontSize}px Georgia, serif`;
         lineHeight = fontSize * 1.28;
-        lines = wrapCanvasText(ctx, `“${fortune}”`, maxWidth);
-        if (lines.length * lineHeight > 660) fontSize -= 4;
-      } while (lines.length * lineHeight > 660 && fontSize > 42);
+        lines = wrapCanvasText(ctx, quote, maxWidth);
+        if (lines.length * lineHeight > 900) fontSize -= 4;
+      } while (lines.length * lineHeight > 900 && fontSize > 54);
 
-      const startY = 675 - ((lines.length - 1) * lineHeight) / 2;
+      const startY = height / 2 - ((lines.length - 1) * lineHeight) / 2;
       lines.forEach((line, index) => {
-        ctx.fillText(line, 540, startY + index * lineHeight);
+        ctx.fillText(line, width / 2, startY + index * lineHeight);
       });
 
-      const dataUrl = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.download = `ritual-fortune-${date.getTime()}.png`;
-      link.href = dataUrl;
-      link.click();
+      ctx.restore();
+
+      canvas.toBlob((blob) => {
+        try {
+          if (blob && blob.size > 10000) {
+            const objectUrl = URL.createObjectURL(blob);
+            triggerDownload(objectUrl, () => {
+              window.setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+            });
+            return;
+          }
+
+          const dataUrl = canvas.toDataURL("image/png");
+          if (!dataUrl.startsWith("data:image/png") || dataUrl.length < 10000) {
+            throw new Error("PNG export produced an invalid image");
+          }
+          triggerDownload(dataUrl);
+        } catch (e) {
+          console.error("Download failed", e);
+        } finally {
+          setDownloading(false);
+        }
+      }, "image/png");
     } catch (e) {
       console.error("Download failed", e);
-    } finally {
       setDownloading(false);
     }
   };
