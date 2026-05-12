@@ -146,9 +146,7 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
       transition={{ duration: 0.45, ease: [0.2, 0.9, 0.2, 1.05] }}
       className="relative w-full max-w-md mx-auto"
     >
-      {/* Capture target — the visible card */}
       <div
-        ref={captureRef}
         className="rounded-3xl p-[1.5px]"
         style={{ background: "var(--gradient-gold)" }}
       >
