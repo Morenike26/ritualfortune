@@ -82,6 +82,17 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
   const handleDownload = () => {
     setDownloading(true);
     try {
+      const triggerDownload = (href: string, cleanup?: () => void) => {
+        const link = document.createElement("a");
+        link.download = `ritual-fortune-${date.getTime()}.png`;
+        link.href = href;
+        link.rel = "noopener";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        cleanup?.();
+      };
+
       const canvas = document.createElement("canvas");
       const width = 1440;
       const height = 1800;
@@ -152,15 +163,9 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
       ctx.fillText("✧", width - 300, 346);
       ctx.fillText("✧", 300, height - 352);
 
-      ctx.fillStyle = "rgba(109, 41, 77, 0.55)";
-      ctx.font = "28px Georgia, serif";
-      ctx.letterSpacing = "7px";
-      ctx.fillText("RITUAL FORTUNE", width / 2, 290);
-
       ctx.fillStyle = "#6d294d";
       ctx.font = "italic 92px Georgia, serif";
       ctx.textBaseline = "middle";
-      ctx.letterSpacing = "0px";
 
       const maxWidth = 920;
       let fontSize = 92;
@@ -180,34 +185,31 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
         ctx.fillText(line, width / 2, startY + index * lineHeight);
       });
 
-      ctx.fillStyle = "rgba(109, 41, 77, 0.5)";
-      ctx.font = "32px Georgia, serif";
-      ctx.fillText("✦ ritual fortune ✦", width / 2, height - 290);
       ctx.restore();
 
-      const dataUrl = canvas.toDataURL("image/png");
-      if (!dataUrl.startsWith("data:image/png") || dataUrl.length < 10000) {
-        throw new Error("PNG export produced an invalid image");
-      }
+      canvas.toBlob((blob) => {
+        try {
+          if (blob && blob.size > 10000) {
+            const objectUrl = URL.createObjectURL(blob);
+            triggerDownload(objectUrl, () => {
+              window.setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+            });
+            return;
+          }
 
-      const link = document.createElement("a");
-      link.download = `ritual-fortune-${date.getTime()}.png`;
-      link.href = dataUrl;
-      link.rel = "noopener";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      if (/iPad|iPhone|iPod/.test(window.navigator.userAgent)) {
-        const preview = window.open("", "_blank", "noopener,noreferrer");
-        preview?.document.write(
-          `<title>Ritual Fortune</title><body style="margin:0;background:#fff7df;display:grid;min-height:100vh;place-items:center"><img alt="Ritual Fortune" src="${dataUrl}" style="width:min(100vw,720px);height:auto;display:block" /></body>`,
-        );
-        preview?.document.close();
-      }
+          const dataUrl = canvas.toDataURL("image/png");
+          if (!dataUrl.startsWith("data:image/png") || dataUrl.length < 10000) {
+            throw new Error("PNG export produced an invalid image");
+          }
+          triggerDownload(dataUrl);
+        } catch (e) {
+          console.error("Download failed", e);
+        } finally {
+          setDownloading(false);
+        }
+      }, "image/png");
     } catch (e) {
       console.error("Download failed", e);
-    } finally {
       setDownloading(false);
     }
   };
