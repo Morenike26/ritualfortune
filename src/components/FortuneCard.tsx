@@ -143,7 +143,7 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
 
       const innerGlow = ctx.createRadialGradient(width / 2, height / 2, 80, width / 2, height / 2, 680);
       innerGlow.addColorStop(0, "rgba(244, 217, 121, 0.24)");
-      glow.addColorStop(1, "rgba(232, 176, 62, 0)");
+      innerGlow.addColorStop(1, "rgba(232, 176, 62, 0)");
       ctx.fillStyle = innerGlow;
       drawRoundedRect(ctx, 146, 158, width - 292, height - 316, 68);
       ctx.fill();
