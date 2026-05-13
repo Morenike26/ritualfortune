@@ -93,99 +93,147 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
         cleanup?.();
       };
 
+      // Social card 1080x1350 (4:5 - Instagram portrait)
+      const width = 1080;
+      const height = 1350;
       const canvas = document.createElement("canvas");
-      const width = 1440;
-      const height = 1800;
       canvas.width = width;
       canvas.height = height;
 
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Canvas is not available");
 
-      ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
 
-      const background = ctx.createLinearGradient(0, 0, width, height);
-      background.addColorStop(0, "#fff7df");
-      background.addColorStop(0.42, "#fbefd0");
-      background.addColorStop(1, "#eecf93");
-      ctx.fillStyle = background;
+      // ---- Page background (warm cream, like app bg) ----
+      const pageBg = ctx.createLinearGradient(0, 0, width, height);
+      pageBg.addColorStop(0, "#fbf3dc");
+      pageBg.addColorStop(1, "#f3e2b4");
+      ctx.fillStyle = pageBg;
       ctx.fillRect(0, 0, width, height);
 
-      const topGlow = ctx.createRadialGradient(1080, 270, 20, 1080, 270, 620);
-      topGlow.addColorStop(0, "rgba(232, 176, 62, 0.45)");
-      topGlow.addColorStop(1, "rgba(232, 176, 62, 0)");
-      ctx.fillStyle = topGlow;
+      // soft gold glow top-right (matches in-app blurred orb)
+      const glow = ctx.createRadialGradient(width - 120, 120, 20, width - 120, 120, 520);
+      glow.addColorStop(0, "rgba(230, 178, 70, 0.55)");
+      glow.addColorStop(1, "rgba(230, 178, 70, 0)");
+      ctx.fillStyle = glow;
       ctx.fillRect(0, 0, width, height);
 
-      const bottomGlow = ctx.createRadialGradient(260, 1520, 30, 260, 1520, 560);
-      bottomGlow.addColorStop(0, "rgba(109, 41, 77, 0.16)");
-      bottomGlow.addColorStop(1, "rgba(109, 41, 77, 0)");
-      ctx.fillStyle = bottomGlow;
-      ctx.fillRect(0, 0, width, height);
+      // ---- Card geometry ----
+      const margin = 90;
+      const cardX = margin;
+      const cardY = 150;
+      const cardW = width - margin * 2;
+      const cardH = height - cardY - 180;
+      const radius = 44;
 
-      ctx.globalAlpha = 0.12;
-      ctx.strokeStyle = "#b96d27";
-      ctx.lineWidth = 2;
-      for (let x = -height; x < width; x += 84) {
-        ctx.beginPath();
-        ctx.moveTo(x, height);
-        ctx.lineTo(x + height, 0);
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
-
-      const border = ctx.createLinearGradient(132, 138, width - 132, height - 138);
-      border.addColorStop(0, "#f4d979");
-      border.addColorStop(0.48, "#d99b38");
-      border.addColorStop(1, "#9f5a24");
-      drawRoundedRect(ctx, 126, 138, width - 252, height - 276, 86);
-      ctx.fillStyle = border;
+      // Outer gradient gold border (1.5px-style ring scaled up)
+      const borderGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
+      borderGrad.addColorStop(0, "#f0c75a");
+      borderGrad.addColorStop(1, "#c98a2e");
+      drawRoundedRect(ctx, cardX - 6, cardY - 6, cardW + 12, cardH + 12, radius + 6);
+      ctx.fillStyle = borderGrad;
       ctx.fill();
 
-      drawRoundedRect(ctx, 146, 158, width - 292, height - 316, 68);
-      ctx.fillStyle = "#fffaf0";
+      // Card body (cream)
+      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, radius);
+      ctx.fillStyle = "#fdf7e4";
       ctx.fill();
 
-      const innerGlow = ctx.createRadialGradient(width / 2, height / 2, 80, width / 2, height / 2, 680);
-      innerGlow.addColorStop(0, "rgba(244, 217, 121, 0.24)");
-      innerGlow.addColorStop(1, "rgba(232, 176, 62, 0)");
+      // Soft shadow inside (recreate boxShadow soft)
+      ctx.save();
+      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, radius);
+      ctx.clip();
+      const innerGlow = ctx.createRadialGradient(
+        cardX + cardW - 80, cardY + 60, 10,
+        cardX + cardW - 80, cardY + 60, 360,
+      );
+      innerGlow.addColorStop(0, "rgba(232, 178, 70, 0.35)");
+      innerGlow.addColorStop(1, "rgba(232, 178, 70, 0)");
       ctx.fillStyle = innerGlow;
-      drawRoundedRect(ctx, 146, 158, width - 292, height - 316, 68);
-      ctx.fill();
+      ctx.fillRect(cardX, cardY, cardW, cardH);
+      ctx.restore();
 
-      ctx.fillStyle = "rgba(185, 109, 39, 0.22)";
-      ctx.font = "64px Georgia, serif";
-      ctx.textAlign = "center";
-      ctx.fillText("✦", 286, 320);
-      ctx.fillText("✦", width - 286, height - 320);
-      ctx.fillText("✧", width - 300, 346);
-      ctx.fillText("✧", 300, height - 352);
-
-      ctx.fillStyle = "#6d294d";
-      ctx.font = "italic 92px Georgia, serif";
+      // ---- Header row: ✦ RITUAL FORTUNE ........ DATE · TIME ----
+      const headerY = cardY + 70;
+      ctx.fillStyle = "#8a6a3a"; // muted-foreground-ish
+      ctx.font = "600 22px 'Helvetica Neue', Arial, sans-serif";
       ctx.textBaseline = "middle";
 
-      const maxWidth = 920;
-      let fontSize = 92;
-      let lineHeight = 118;
+      // left chip (sparkle + label)
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#c08a2a";
+      ctx.font = "26px Georgia, serif";
+      ctx.fillText("✦", cardX + 60, headerY);
+      ctx.fillStyle = "#8a6a3a";
+      ctx.font = "600 22px 'Helvetica Neue', Arial, sans-serif";
+      const label = "RITUAL  FORTUNE";
+      ctx.fillText(label, cardX + 92, headerY);
+
+      // right date
+      ctx.textAlign = "right";
+      const dateStr = `${date.toLocaleDateString()} · ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      ctx.fillText(dateStr, cardX + cardW - 60, headerY);
+
+      // ---- Quote (centered, italic serif) ----
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#3a2a4a"; // foreground
+      const maxTextWidth = cardW - 160;
+      const quote = (fortune.trim() || "Your fortune is unfolding.");
+
+      let fontSize = 64;
+      let lineHeight = 80;
       let lines: string[] = [];
-      const quote = `“${fortune.trim() || "Your fortune is unfolding."}”`;
-
+      const maxBlockHeight = cardH - 260;
       do {
-        ctx.font = `italic ${fontSize}px Georgia, serif`;
-        lineHeight = fontSize * 1.28;
-        lines = wrapCanvasText(ctx, quote, maxWidth);
-        if (lines.length * lineHeight > 900) fontSize -= 4;
-      } while (lines.length * lineHeight > 900 && fontSize > 54);
+        ctx.font = `italic ${fontSize}px Georgia, 'Times New Roman', serif`;
+        lineHeight = Math.round(fontSize * 1.28);
+        lines = wrapCanvasText(ctx, quote, maxTextWidth);
+        if (lines.length * lineHeight > maxBlockHeight) fontSize -= 3;
+      } while (lines.length * lineHeight > maxBlockHeight && fontSize > 30);
 
-      const startY = height / 2 - ((lines.length - 1) * lineHeight) / 2;
-      lines.forEach((line, index) => {
-        ctx.fillText(line, width / 2, startY + index * lineHeight);
+      const blockH = lines.length * lineHeight;
+      const centerY = cardY + cardH / 2;
+      const firstLineY = centerY - blockH / 2 + lineHeight / 2;
+
+      // Big gold quote marks
+      ctx.fillStyle = "#c98a2e";
+      ctx.font = `italic ${fontSize + 8}px Georgia, serif`;
+      const firstLineWidth = ctx.measureText(lines[0] ?? "").width;
+      ctx.textAlign = "right";
+      ctx.fillText("“", width / 2 - firstLineWidth / 2 - 6, firstLineY);
+      const lastLineWidth = ctx.measureText(lines[lines.length - 1] ?? "").width;
+      ctx.textAlign = "left";
+      ctx.fillText("”", width / 2 + lastLineWidth / 2 + 6, firstLineY + (lines.length - 1) * lineHeight);
+
+      ctx.fillStyle = "#3a2a4a";
+      ctx.textAlign = "center";
+      ctx.font = `italic ${fontSize}px Georgia, 'Times New Roman', serif`;
+      lines.forEach((line, i) => {
+        ctx.fillText(line, width / 2, firstLineY + i * lineHeight);
       });
 
-      ctx.restore();
+      // ---- Divider + footer "✦ ritual fortune ✦" ----
+      const footerY = cardY + cardH - 70;
+      ctx.strokeStyle = "rgba(180, 140, 70, 0.35)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cardX + 80, footerY - 28);
+      ctx.lineTo(cardX + cardW - 80, footerY - 28);
+      ctx.stroke();
+
+      ctx.fillStyle = "#8a6a3a";
+      ctx.font = "500 20px 'Helvetica Neue', Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("✦   RITUAL  FORTUNE   ✦", width / 2, footerY);
+
+      // ---- Outside-card tagline ----
+      ctx.fillStyle = "rgba(90, 70, 40, 0.6)";
+      ctx.font = "500 20px 'Helvetica Neue', Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("a small daily ritual · on-chain", width / 2, cardY + cardH + 80);
 
       canvas.toBlob((blob) => {
         try {
