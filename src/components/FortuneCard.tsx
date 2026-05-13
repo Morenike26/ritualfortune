@@ -105,7 +105,7 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
     try {
       const triggerDownload = (href: string, cleanup?: () => void) => {
         const link = document.createElement("a");
-        link.download = `ritual-fortune-${date.getTime()}.png`;
+        link.download = `ritual-fortune-social-${Date.now()}.png`;
         link.href = href;
         link.rel = "noopener";
         document.body.appendChild(link);
