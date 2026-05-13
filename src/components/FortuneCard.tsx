@@ -160,53 +160,55 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
       const cardH = height - cardY - 180;
       const radius = 66;
 
-      // Outer gradient gold border (1.5px-style ring scaled up)
+      // Outer gradient gold frame
       const borderGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
-      borderGrad.addColorStop(0, "#f0c75a");
-      borderGrad.addColorStop(1, "#c98a2e");
-      drawRoundedRect(ctx, cardX - 6, cardY - 6, cardW + 12, cardH + 12, radius + 6);
+      borderGrad.addColorStop(0, "#f4d468");
+      borderGrad.addColorStop(0.5, "#d99a34");
+      borderGrad.addColorStop(1, "#aa5f1e");
+      drawRoundedRect(ctx, cardX - 2, cardY - 2, cardW + 4, cardH + 4, radius + 2);
       ctx.fillStyle = borderGrad;
       ctx.fill();
 
       // Card body (cream)
-      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, radius);
-      ctx.fillStyle = "#fdf7e4";
+      const frame = 24;
+      drawRoundedRect(ctx, cardX + frame, cardY + frame, cardW - frame * 2, cardH - frame * 2, radius - 20);
+      ctx.fillStyle = "#fffaf0";
       ctx.fill();
 
-      // Soft shadow inside (recreate boxShadow soft)
+      // Soft inner glow and subtle vignette
       ctx.save();
-      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, radius);
+      drawRoundedRect(ctx, cardX + frame, cardY + frame, cardW - frame * 2, cardH - frame * 2, radius - 20);
       ctx.clip();
       const innerGlow = ctx.createRadialGradient(
-        cardX + cardW - 80, cardY + 60, 10,
-        cardX + cardW - 80, cardY + 60, 360,
+        cardX + cardW - 110, cardY + 110, 10,
+        cardX + cardW - 110, cardY + 110, 460,
       );
-      innerGlow.addColorStop(0, "rgba(232, 178, 70, 0.35)");
+      innerGlow.addColorStop(0, "rgba(232, 188, 86, 0.28)");
       innerGlow.addColorStop(1, "rgba(232, 178, 70, 0)");
       ctx.fillStyle = innerGlow;
       ctx.fillRect(cardX, cardY, cardW, cardH);
       ctx.restore();
 
-      // ---- Header row: ✦ RITUAL FORTUNE ........ DATE · TIME ----
-      const headerY = cardY + 70;
+      // ---- Header row: visible app-card identity ----
+      const headerY = cardY + 94;
       ctx.fillStyle = "#8a6a3a"; // muted-foreground-ish
-      ctx.font = "600 22px 'Helvetica Neue', Arial, sans-serif";
+      ctx.font = "700 28px 'Helvetica Neue', Arial, sans-serif";
       ctx.textBaseline = "middle";
 
-      // left chip (sparkle + label)
       ctx.textAlign = "left";
-      ctx.fillStyle = "#c08a2a";
-      ctx.font = "26px Georgia, serif";
-      ctx.fillText("✦", cardX + 60, headerY);
+      drawSparkle(ctx, cardX + 88, headerY, 18, "#d39b39");
       ctx.fillStyle = "#8a6a3a";
-      ctx.font = "600 22px 'Helvetica Neue', Arial, sans-serif";
-      const label = "RITUAL  FORTUNE";
-      ctx.fillText(label, cardX + 92, headerY);
+      ctx.font = "700 28px 'Helvetica Neue', Arial, sans-serif";
+      ctx.fillText("RITUAL FORTUNE", cardX + 122, headerY);
 
-      // right date
       ctx.textAlign = "right";
       const dateStr = `${date.toLocaleDateString()} · ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-      ctx.fillText(dateStr, cardX + cardW - 60, headerY);
+      ctx.fillText(dateStr, cardX + cardW - 86, headerY);
+
+      drawSparkle(ctx, cardX + 160, cardY + 206, 26, "rgba(202, 139, 69, 0.18)");
+      drawSparkle(ctx, cardX + cardW - 170, cardY + 238, 22, "rgba(202, 139, 69, 0.24)");
+      drawSparkle(ctx, cardX + 176, cardY + cardH - 220, 24, "rgba(202, 139, 69, 0.24)");
+      drawSparkle(ctx, cardX + cardW - 152, cardY + cardH - 180, 26, "rgba(202, 139, 69, 0.28)");
 
       // ---- Quote (centered, italic serif) ----
       ctx.textAlign = "center";
