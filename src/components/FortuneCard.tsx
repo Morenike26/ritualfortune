@@ -212,62 +212,61 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
 
       // ---- Quote (centered, italic serif) ----
       ctx.textAlign = "center";
-      ctx.fillStyle = "#3a2a4a"; // foreground
-      const maxTextWidth = cardW - 160;
+      ctx.fillStyle = "#6f2855";
+      const maxTextWidth = cardW - 250;
       const quote = (fortune.trim() || "Your fortune is unfolding.");
 
-      let fontSize = 64;
-      let lineHeight = 80;
+      let fontSize = 92;
+      let lineHeight = 114;
       let lines: string[] = [];
-      const maxBlockHeight = cardH - 260;
+      const maxBlockHeight = cardH - 470;
       do {
-        ctx.font = `italic ${fontSize}px Georgia, 'Times New Roman', serif`;
-        lineHeight = Math.round(fontSize * 1.28);
+        ctx.font = `700 italic ${fontSize}px Georgia, 'Times New Roman', serif`;
+        lineHeight = Math.round(fontSize * 1.26);
         lines = wrapCanvasText(ctx, quote, maxTextWidth);
         if (lines.length * lineHeight > maxBlockHeight) fontSize -= 3;
-      } while (lines.length * lineHeight > maxBlockHeight && fontSize > 30);
+      } while (lines.length * lineHeight > maxBlockHeight && fontSize > 42);
 
       const blockH = lines.length * lineHeight;
-      const centerY = cardY + cardH / 2;
+      const centerY = cardY + cardH / 2 + 18;
       const firstLineY = centerY - blockH / 2 + lineHeight / 2;
 
-      // Big gold quote marks
-      ctx.fillStyle = "#c98a2e";
-      ctx.font = `italic ${fontSize + 8}px Georgia, serif`;
+      // Quote marks are part of the fortune, like the visible card.
+      ctx.fillStyle = "#6f2855";
+      ctx.font = `700 italic ${fontSize}px Georgia, 'Times New Roman', serif`;
       const firstLineWidth = ctx.measureText(lines[0] ?? "").width;
       ctx.textAlign = "right";
-      ctx.fillText("“", width / 2 - firstLineWidth / 2 - 6, firstLineY);
+      ctx.fillText("“", width / 2 - firstLineWidth / 2 - 10, firstLineY);
       const lastLineWidth = ctx.measureText(lines[lines.length - 1] ?? "").width;
       ctx.textAlign = "left";
-      ctx.fillText("”", width / 2 + lastLineWidth / 2 + 6, firstLineY + (lines.length - 1) * lineHeight);
+      ctx.fillText("”", width / 2 + lastLineWidth / 2 + 10, firstLineY + (lines.length - 1) * lineHeight);
 
-      ctx.fillStyle = "#3a2a4a";
+      ctx.fillStyle = "#6f2855";
       ctx.textAlign = "center";
-      ctx.font = `italic ${fontSize}px Georgia, 'Times New Roman', serif`;
+      ctx.font = `700 italic ${fontSize}px Georgia, 'Times New Roman', serif`;
       lines.forEach((line, i) => {
         ctx.fillText(line, width / 2, firstLineY + i * lineHeight);
       });
 
-      // ---- Divider + footer "✦ ritual fortune ✦" ----
-      const footerY = cardY + cardH - 70;
+      // ---- Divider + footer mirrors the app Fortune card ----
+      const footerY = cardY + cardH - 96;
       ctx.strokeStyle = "rgba(180, 140, 70, 0.35)";
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(cardX + 80, footerY - 28);
-      ctx.lineTo(cardX + cardW - 80, footerY - 28);
+      ctx.moveTo(cardX + 92, footerY - 38);
+      ctx.lineTo(cardX + cardW - 92, footerY - 38);
       ctx.stroke();
 
       ctx.fillStyle = "#8a6a3a";
-      ctx.font = "500 20px 'Helvetica Neue', Arial, sans-serif";
+      ctx.font = "600 26px 'Helvetica Neue', Arial, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("✦   RITUAL  FORTUNE   ✦", width / 2, footerY);
+      ctx.fillText("✦   RITUAL FORTUNE   ✦", width / 2, footerY);
 
-      // ---- Outside-card tagline ----
-      ctx.fillStyle = "rgba(90, 70, 40, 0.6)";
-      ctx.font = "500 20px 'Helvetica Neue', Arial, sans-serif";
+      ctx.fillStyle = "rgba(90, 70, 40, 0.56)";
+      ctx.font = "600 24px 'Helvetica Neue', Arial, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("a small daily ritual · on-chain", width / 2, cardY + cardH + 80);
+      ctx.fillText("a small daily ritual · on-chain", width / 2, cardY + cardH + 78);
 
       canvas.toBlob((blob) => {
         try {
