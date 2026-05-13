@@ -79,6 +79,27 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
     ctx.closePath();
   };
 
+  const drawSparkle = (
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    size: number,
+    color: string,
+  ) => {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.beginPath();
+    ctx.moveTo(0, -size);
+    ctx.bezierCurveTo(size * 0.18, -size * 0.18, size * 0.18, -size * 0.18, size, 0);
+    ctx.bezierCurveTo(size * 0.18, size * 0.18, size * 0.18, size * 0.18, 0, size);
+    ctx.bezierCurveTo(-size * 0.18, size * 0.18, -size * 0.18, size * 0.18, -size, 0);
+    ctx.bezierCurveTo(-size * 0.18, -size * 0.18, -size * 0.18, -size * 0.18, 0, -size);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
+  };
+
   const handleDownload = () => {
     setDownloading(true);
     try {
@@ -93,9 +114,9 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
         cleanup?.();
       };
 
-      // Social card 1080x1350 (4:5 - Instagram portrait)
-      const width = 1080;
-      const height = 1350;
+      // Social card 1440x1800 (4:5 - crisp Instagram-ready portrait)
+      const width = 1440;
+      const height = 1800;
       const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
@@ -106,27 +127,38 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
 
-      // ---- Page background (warm cream, like app bg) ----
+      // ---- Full social background (warm cream, like the app) ----
       const pageBg = ctx.createLinearGradient(0, 0, width, height);
-      pageBg.addColorStop(0, "#fbf3dc");
-      pageBg.addColorStop(1, "#f3e2b4");
+      pageBg.addColorStop(0, "#fff8e7");
+      pageBg.addColorStop(0.48, "#f8e8bd");
+      pageBg.addColorStop(1, "#edcf98");
       ctx.fillStyle = pageBg;
       ctx.fillRect(0, 0, width, height);
 
-      // soft gold glow top-right (matches in-app blurred orb)
-      const glow = ctx.createRadialGradient(width - 120, 120, 20, width - 120, 120, 520);
-      glow.addColorStop(0, "rgba(230, 178, 70, 0.55)");
+      const glow = ctx.createRadialGradient(width - 110, 110, 20, width - 110, 110, 680);
+      glow.addColorStop(0, "rgba(231, 183, 72, 0.62)");
       glow.addColorStop(1, "rgba(230, 178, 70, 0)");
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, width, height);
 
+      ctx.save();
+      ctx.strokeStyle = "rgba(183, 133, 46, 0.12)";
+      ctx.lineWidth = 2;
+      for (let x = -height; x < width + height; x += 84) {
+        ctx.beginPath();
+        ctx.moveTo(x, height + 80);
+        ctx.lineTo(x + height + 80, -80);
+        ctx.stroke();
+      }
+      ctx.restore();
+
       // ---- Card geometry ----
-      const margin = 90;
+      const margin = 124;
       const cardX = margin;
-      const cardY = 150;
+      const cardY = 154;
       const cardW = width - margin * 2;
       const cardH = height - cardY - 180;
-      const radius = 44;
+      const radius = 66;
 
       // Outer gradient gold border (1.5px-style ring scaled up)
       const borderGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
