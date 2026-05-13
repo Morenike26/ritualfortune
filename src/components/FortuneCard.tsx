@@ -79,12 +79,33 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
     ctx.closePath();
   };
 
+  const drawSparkle = (
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    size: number,
+    color: string,
+  ) => {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.beginPath();
+    ctx.moveTo(0, -size);
+    ctx.bezierCurveTo(size * 0.18, -size * 0.18, size * 0.18, -size * 0.18, size, 0);
+    ctx.bezierCurveTo(size * 0.18, size * 0.18, size * 0.18, size * 0.18, 0, size);
+    ctx.bezierCurveTo(-size * 0.18, size * 0.18, -size * 0.18, size * 0.18, -size, 0);
+    ctx.bezierCurveTo(-size * 0.18, -size * 0.18, -size * 0.18, -size * 0.18, 0, -size);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
+  };
+
   const handleDownload = () => {
     setDownloading(true);
     try {
       const triggerDownload = (href: string, cleanup?: () => void) => {
         const link = document.createElement("a");
-        link.download = `ritual-fortune-${date.getTime()}.png`;
+        link.download = `ritual-fortune-social-${Date.now()}.png`;
         link.href = href;
         link.rel = "noopener";
         document.body.appendChild(link);
@@ -93,9 +114,9 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
         cleanup?.();
       };
 
-      // Social card 1080x1350 (4:5 - Instagram portrait)
-      const width = 1080;
-      const height = 1350;
+      // Social card 1440x1800 (4:5 - crisp Instagram-ready portrait)
+      const width = 1440;
+      const height = 1800;
       const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
@@ -106,134 +127,146 @@ export function FortuneCard({ fortune, openedAt, chainId, txHash }: FortuneCardP
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
 
-      // ---- Page background (warm cream, like app bg) ----
+      // ---- Full social background (warm cream, like the app) ----
       const pageBg = ctx.createLinearGradient(0, 0, width, height);
-      pageBg.addColorStop(0, "#fbf3dc");
-      pageBg.addColorStop(1, "#f3e2b4");
+      pageBg.addColorStop(0, "#fff8e7");
+      pageBg.addColorStop(0.48, "#f8e8bd");
+      pageBg.addColorStop(1, "#edcf98");
       ctx.fillStyle = pageBg;
       ctx.fillRect(0, 0, width, height);
 
-      // soft gold glow top-right (matches in-app blurred orb)
-      const glow = ctx.createRadialGradient(width - 120, 120, 20, width - 120, 120, 520);
-      glow.addColorStop(0, "rgba(230, 178, 70, 0.55)");
+      const glow = ctx.createRadialGradient(width - 110, 110, 20, width - 110, 110, 680);
+      glow.addColorStop(0, "rgba(231, 183, 72, 0.62)");
       glow.addColorStop(1, "rgba(230, 178, 70, 0)");
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, width, height);
 
+      ctx.save();
+      ctx.strokeStyle = "rgba(183, 133, 46, 0.12)";
+      ctx.lineWidth = 2;
+      for (let x = -height; x < width + height; x += 84) {
+        ctx.beginPath();
+        ctx.moveTo(x, height + 80);
+        ctx.lineTo(x + height + 80, -80);
+        ctx.stroke();
+      }
+      ctx.restore();
+
       // ---- Card geometry ----
-      const margin = 90;
+      const margin = 124;
       const cardX = margin;
-      const cardY = 150;
+      const cardY = 154;
       const cardW = width - margin * 2;
       const cardH = height - cardY - 180;
-      const radius = 44;
+      const radius = 66;
 
-      // Outer gradient gold border (1.5px-style ring scaled up)
+      // Outer gradient gold frame
       const borderGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
-      borderGrad.addColorStop(0, "#f0c75a");
-      borderGrad.addColorStop(1, "#c98a2e");
-      drawRoundedRect(ctx, cardX - 6, cardY - 6, cardW + 12, cardH + 12, radius + 6);
+      borderGrad.addColorStop(0, "#f4d468");
+      borderGrad.addColorStop(0.5, "#d99a34");
+      borderGrad.addColorStop(1, "#aa5f1e");
+      drawRoundedRect(ctx, cardX - 2, cardY - 2, cardW + 4, cardH + 4, radius + 2);
       ctx.fillStyle = borderGrad;
       ctx.fill();
 
       // Card body (cream)
-      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, radius);
-      ctx.fillStyle = "#fdf7e4";
+      const frame = 24;
+      drawRoundedRect(ctx, cardX + frame, cardY + frame, cardW - frame * 2, cardH - frame * 2, radius - 20);
+      ctx.fillStyle = "#fffaf0";
       ctx.fill();
 
-      // Soft shadow inside (recreate boxShadow soft)
+      // Soft inner glow and subtle vignette
       ctx.save();
-      drawRoundedRect(ctx, cardX, cardY, cardW, cardH, radius);
+      drawRoundedRect(ctx, cardX + frame, cardY + frame, cardW - frame * 2, cardH - frame * 2, radius - 20);
       ctx.clip();
       const innerGlow = ctx.createRadialGradient(
-        cardX + cardW - 80, cardY + 60, 10,
-        cardX + cardW - 80, cardY + 60, 360,
+        cardX + cardW - 110, cardY + 110, 10,
+        cardX + cardW - 110, cardY + 110, 460,
       );
-      innerGlow.addColorStop(0, "rgba(232, 178, 70, 0.35)");
+      innerGlow.addColorStop(0, "rgba(232, 188, 86, 0.28)");
       innerGlow.addColorStop(1, "rgba(232, 178, 70, 0)");
       ctx.fillStyle = innerGlow;
       ctx.fillRect(cardX, cardY, cardW, cardH);
       ctx.restore();
 
-      // ---- Header row: ✦ RITUAL FORTUNE ........ DATE · TIME ----
-      const headerY = cardY + 70;
+      // ---- Header row: visible app-card identity ----
+      const headerY = cardY + 94;
       ctx.fillStyle = "#8a6a3a"; // muted-foreground-ish
-      ctx.font = "600 22px 'Helvetica Neue', Arial, sans-serif";
+      ctx.font = "700 28px 'Helvetica Neue', Arial, sans-serif";
       ctx.textBaseline = "middle";
 
-      // left chip (sparkle + label)
       ctx.textAlign = "left";
-      ctx.fillStyle = "#c08a2a";
-      ctx.font = "26px Georgia, serif";
-      ctx.fillText("✦", cardX + 60, headerY);
+      drawSparkle(ctx, cardX + 88, headerY, 18, "#d39b39");
       ctx.fillStyle = "#8a6a3a";
-      ctx.font = "600 22px 'Helvetica Neue', Arial, sans-serif";
-      const label = "RITUAL  FORTUNE";
-      ctx.fillText(label, cardX + 92, headerY);
+      ctx.font = "700 28px 'Helvetica Neue', Arial, sans-serif";
+      ctx.fillText("RITUAL FORTUNE", cardX + 122, headerY);
 
-      // right date
       ctx.textAlign = "right";
       const dateStr = `${date.toLocaleDateString()} · ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-      ctx.fillText(dateStr, cardX + cardW - 60, headerY);
+      ctx.fillText(dateStr, cardX + cardW - 86, headerY);
+
+      drawSparkle(ctx, cardX + 160, cardY + 206, 26, "rgba(202, 139, 69, 0.18)");
+      drawSparkle(ctx, cardX + cardW - 170, cardY + 238, 22, "rgba(202, 139, 69, 0.24)");
+      drawSparkle(ctx, cardX + 176, cardY + cardH - 220, 24, "rgba(202, 139, 69, 0.24)");
+      drawSparkle(ctx, cardX + cardW - 152, cardY + cardH - 180, 26, "rgba(202, 139, 69, 0.28)");
 
       // ---- Quote (centered, italic serif) ----
       ctx.textAlign = "center";
-      ctx.fillStyle = "#3a2a4a"; // foreground
-      const maxTextWidth = cardW - 160;
+      ctx.fillStyle = "#6f2855";
+      const maxTextWidth = cardW - 250;
       const quote = (fortune.trim() || "Your fortune is unfolding.");
 
-      let fontSize = 64;
-      let lineHeight = 80;
+      let fontSize = 92;
+      let lineHeight = 114;
       let lines: string[] = [];
-      const maxBlockHeight = cardH - 260;
+      const maxBlockHeight = cardH - 470;
       do {
-        ctx.font = `italic ${fontSize}px Georgia, 'Times New Roman', serif`;
-        lineHeight = Math.round(fontSize * 1.28);
+        ctx.font = `700 italic ${fontSize}px Georgia, 'Times New Roman', serif`;
+        lineHeight = Math.round(fontSize * 1.26);
         lines = wrapCanvasText(ctx, quote, maxTextWidth);
         if (lines.length * lineHeight > maxBlockHeight) fontSize -= 3;
-      } while (lines.length * lineHeight > maxBlockHeight && fontSize > 30);
+      } while (lines.length * lineHeight > maxBlockHeight && fontSize > 42);
 
       const blockH = lines.length * lineHeight;
-      const centerY = cardY + cardH / 2;
+      const centerY = cardY + cardH / 2 + 18;
       const firstLineY = centerY - blockH / 2 + lineHeight / 2;
 
-      // Big gold quote marks
-      ctx.fillStyle = "#c98a2e";
-      ctx.font = `italic ${fontSize + 8}px Georgia, serif`;
+      // Quote marks are part of the fortune, like the visible card.
+      ctx.fillStyle = "#6f2855";
+      ctx.font = `700 italic ${fontSize}px Georgia, 'Times New Roman', serif`;
       const firstLineWidth = ctx.measureText(lines[0] ?? "").width;
       ctx.textAlign = "right";
-      ctx.fillText("“", width / 2 - firstLineWidth / 2 - 6, firstLineY);
+      ctx.fillText("“", width / 2 - firstLineWidth / 2 - 10, firstLineY);
       const lastLineWidth = ctx.measureText(lines[lines.length - 1] ?? "").width;
       ctx.textAlign = "left";
-      ctx.fillText("”", width / 2 + lastLineWidth / 2 + 6, firstLineY + (lines.length - 1) * lineHeight);
+      ctx.fillText("”", width / 2 + lastLineWidth / 2 + 10, firstLineY + (lines.length - 1) * lineHeight);
 
-      ctx.fillStyle = "#3a2a4a";
+      ctx.fillStyle = "#6f2855";
       ctx.textAlign = "center";
-      ctx.font = `italic ${fontSize}px Georgia, 'Times New Roman', serif`;
+      ctx.font = `700 italic ${fontSize}px Georgia, 'Times New Roman', serif`;
       lines.forEach((line, i) => {
         ctx.fillText(line, width / 2, firstLineY + i * lineHeight);
       });
 
-      // ---- Divider + footer "✦ ritual fortune ✦" ----
-      const footerY = cardY + cardH - 70;
+      // ---- Divider + footer mirrors the app Fortune card ----
+      const footerY = cardY + cardH - 96;
       ctx.strokeStyle = "rgba(180, 140, 70, 0.35)";
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(cardX + 80, footerY - 28);
-      ctx.lineTo(cardX + cardW - 80, footerY - 28);
+      ctx.moveTo(cardX + 92, footerY - 38);
+      ctx.lineTo(cardX + cardW - 92, footerY - 38);
       ctx.stroke();
 
       ctx.fillStyle = "#8a6a3a";
-      ctx.font = "500 20px 'Helvetica Neue', Arial, sans-serif";
+      ctx.font = "600 26px 'Helvetica Neue', Arial, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("✦   RITUAL  FORTUNE   ✦", width / 2, footerY);
+      ctx.fillText("✦   RITUAL FORTUNE   ✦", width / 2, footerY);
 
-      // ---- Outside-card tagline ----
-      ctx.fillStyle = "rgba(90, 70, 40, 0.6)";
-      ctx.font = "500 20px 'Helvetica Neue', Arial, sans-serif";
+      ctx.fillStyle = "rgba(90, 70, 40, 0.56)";
+      ctx.font = "600 24px 'Helvetica Neue', Arial, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("a small daily ritual · on-chain", width / 2, cardY + cardH + 80);
+      ctx.fillText("a small daily ritual · on-chain", width / 2, cardY + cardH + 78);
 
       canvas.toBlob((blob) => {
         try {
