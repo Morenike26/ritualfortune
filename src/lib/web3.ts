@@ -1,6 +1,6 @@
 import { createPublicClient, createWalletClient, custom, http, defineChain, type Address, type Hex } from "viem";
 
-export const RITUAL_FORTUNE_ADDRESS = "0x3E9d40Ae286e0F5e85AD05af0E53f49164587f68" as Address;
+export const RITUAL_FORTUNE_ADDRESS = "0x578949C19ec466965386B7eCAEb5fd341153c154" as Address;
 
 export const RITUAL_CHAIN_ID = 1979;
 export const RITUAL_RPC_URL = "https://rpc.ritualfoundation.org";
